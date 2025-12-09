@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOM101 Solution - องค์การบริหารส่วนตำบลหน่อม</title>
+    <!-- โหลด Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- โหลด Font Awesome สำหรับไอคอนราชการ/ทันสมัย -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- โหลด Font Prompt สำหรับภาษาไทย -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            /* ใช้โทนสีอ่อนตามมาตรฐานเว็บไซต์ภาครัฐ */
+            font-family: 'Prompt', sans-serif;
+            background-color: #F8F9FA; /* Off-White/Light Gray */
+        }
+        
+        /* สไตล์หลักของคอนเทนเนอร์ */
+        .main-container {
+            max-width: 1000px;
+        }
+
+        /* สไตล์สำหรับเมนูแต่ละชิ้น */
+        .menu-item {
+            /* โทนสีขาวสะอาดตา มีเงาอ่อนๆ ดูเป็นทางการและทันสมัย */
+            background-color: white;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border-left: 5px solid transparent; /* เตรียมไว้สำหรับ hover effect */
+        }
+        
+/* Hover effect: ยกสูงขึ้นกว่าเดิม + เพิ่มเงาให้ดูเด่นขึ้น */
+.menu-item:hover {
+    transform: translateY(-5px); /* เดิม -2px -> เพิ่มให้เด่นชัดขึ้น */
+    box-shadow: 
+        0 12px 20px -3px rgba(0, 0, 0, 0.15),
+        0 6px 10px -2px rgba(0, 0, 0, 0.08);
+    border-left-color: #10B981; /* สีเน้นเหมือนเดิม */
+    transition: all 0.25s ease; /* ให้เคลื่อนไหวลื่นขึ้น */
+}
+
+        
+        /* สไตล์ไอคอนหลัก (สีเขียว-น้ำเงิน ดูเป็นราชการ/เทคโนโลยี) */
+        .menu-icon {
+            color: #06B6D4; /* Cyan-600 */
+        }
+        
+        /* สไตล์ปุ่มย้อนกลับ */
+        .back-button {
+            transition: all 0.2s;
+        }
+        .back-button:hover {
+            background-color: #E0E7FF; /* Blue-100 */
+            color: #3B82F6; /* Blue-500 */
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-2 sm:p-4">
+
+    <!-- ส่วนหัวเว็บไซต์ (Header) - ลบปุ่มนำทางออกจากส่วนนี้ -->
+<header class="main-container mx-auto flex items-center justify-start space-x-4 mb-4 p-2 bg-white rounded-xl shadow-md border-b-4 border-teal-500">
+
+        <!-- โลโก้ อบต.หน่อม -->
+        <img src="https://cdn.jsdelivr.net/gh/aomsy/dashboard/logo-nom-main.png" alt="โลโก้ อบต.หน่อม" class="w-12 h-12 rounded-full shadow-lg">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">NOM101 Solution</h1>
+            <p class="text-sm text-gray-500">องค์การบริหารส่วนตำบลหน่อม อำเภออาจสามารถ จังหวัดร้อยเอ็ด</p>
+        </div>
+    </header>
+
+    <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+    <main class="main-container mx-auto">
+        
+        <!-- ส่วนแสดงหัวข้อเมนูปัจจุบันและปุ่มนำทาง - ย้ายปุ่มมาไว้ใน Div นี้ -->
+        <div class="mb-6 p-4 bg-white rounded-lg shadow-sm border-l-4 border-blue-500 flex justify-between items-center">
+            <!-- Title and Level text -->
+            <div>
+                <h2 id="currentTitle" class="text-xl sm:text-2xl font-semibold text-gray-700">ระบบบริหารจัดการกลาง</h2>
+                <p id="currentLevel" class="text-sm text-gray-400">ระดับที่ 1: เมนูหลัก</p>
+            </div>
+            
+            <!-- ส่วนควบคุมการนำทาง (Back/Home) -->
+            <div id="navButtons" class="flex space-x-2 hidden flex-shrink-0">
+                <!-- ปุ่มกลับเมนูหลัก (Home) -->
+                <button id="homeButton" class="back-button flex items-center px-3 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold shadow-inner hover:bg-red-100 hover:text-red-500">
+                    <i class="fas fa-home"></i><span class="ml-2">เมนูหลัก</span>
+                </button>
+                <!-- ปุ่มย้อนกลับหนึ่งระดับ (Back) -->
+                <button id="backButton" class="back-button flex items-center px-3 py-2 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold shadow-inner hover:bg-blue-100 hover:text-blue-500">
+                    <i class="fas fa-arrow-left"></i><span class="ml-2">ย้อนกลับ</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ส่วนแสดงรายการเมนู -->
+        <div id="menuContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- เมนูจะถูกสร้างด้วย JavaScript -->
+        </div>
+        
+    </main>
+
+    <!-- ส่วนเครดิตผู้จัดทำ (Footer) -->
+<footer class="main-container mx-auto mt-5 p-3 text-center text-gray-600 text-xs sm:text-sm">
+    <div class="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+        <img src="https://cdn.jsdelivr.net/gh/aomsy/dashboard/aom-toon.png" alt="รูปผู้พัฒนา" class="w-10 h-10 rounded-full border-2 border-gray-300">
+        <p>
+            พัฒนาโดย <span class="font-medium text-gray-900">นายจักรกริช เข็มแป้นพะเนา</span>
+            หัวหน้าสำนักปลัด อบต.หน่อม
+        </p>
+    </div>
+</footer>
+
+
+    <!-- ==================================================================== -->
+    <!-- ส่วน JavaScript สำหรับจัดการ Logic และการนำทาง 4 ระดับ -->
+    <!-- ==================================================================== -->
+    <script>
+        // 1. โครงสร้างข้อมูลเมนูตาม Flowchart 4 ระดับ
+        const menuData = {
+            "L1_MAIN": {
+                title: "ระบบบริหารจัดการกลาง",
+                level: 1,
+                items: [
+                    // เมนูหลัก 8 รายการ
+                    { id: "A01", icon: "fa-briefcase", name: "งานบริหารทั่วไป", nextLevel: "L2_GENERAL" },
+                    { id: "A02", icon: "fa-shield-alt", name: "งานป้องกันฯ", link: "Save-nom101.html" }, 
+                    { id: "A03", icon: "fa-user-tie", name: "งานการเจ้าหน้าที่", link: "personal-nom101.html" },
+                    { id: "A04", icon: "fa-bullseye", name: "งานยุทธศาสตร์", link: "plan-nom101.html" },
+                    { id: "A05", icon: "fa-wallet", name: "งานงบประมาณ", link: "budget-nom101.html" },
+                    { id: "A06", icon: "fa-gavel", name: "งานกฎหมาย", link: "law-nom101.html" },
+                    { id: "A07", icon: "fa-clinic-medical", name: "งานสาธารณสุข", link: "healt-nom101.html" },
+                    { id: "A08", icon: "fa-seedling", name: "งานเกษตร", link: "agri-nom101.html" },
+                                       { id: "A09", icon: "fa-layer-group", name: "งานอื่นๆ", link: "other-nom101.html" }
+
+
+                ]
+            },
+            
+            // L2: งานบริหารทั่วไป
+            "L2_GENERAL": { 
+                title: "งานบริหารทั่วไป", 
+                level: 2, 
+                items: [
+                    { id: "B01", icon: "fa-file-alt", name: "งานธุรการ(DMS)", nextLevel: "L3_DOC" }, 
+                    { id: "B02", icon: "fa-calendar-alt", name: "จองห้องประชุม", link: "Room-nom101.html" },
+                    { id: "B03", icon: "fa-chart-line", name: "บันทึกวาระงานผู้บริหาร", link: "Agenda-nom101.html" },
+                    { id: "B04", icon: "fa-phone-alt", name: "โทรด่วน", link: "Tel-nom101.html" },
+                    { id: "B05", icon: "fa-users", name: "เข้าร่วมกิจกรรม สป.", link: "Active-Sp-nom101.html" },
+                    { id: "B06", icon: "fa-cogs", name: "ระบบอื่นๆ", link: "Dev1-nom101.html" }
+                ]
+            },
+
+            // L3: งานธุรการ
+            "L3_DOC": { 
+                title: "งานธุรการ(DMS)", 
+                level: 3, 
+                items: [
+                    { id: "C01", icon: "fa-file-import", name: "หนังสือรับ", nextLevel: "L4_RAB" },
+                    { id: "C02", icon: "fa-paper-plane", name: "หนังสือส่ง", nextLevel: "L4_SONG" },
+                    { id: "C03", icon: "fa-scroll", name: "คำสั่ง", nextLevel: "L4_SANG" }
+                ]
+            },
+
+            // L4: Final Link Level (ระดับที่ 4)
+            "L4_RAB": { title: "หนังสือรับ", level: 4, items: [
+                { id: "D01", icon: "fa-file-signature", name: "ฟอร์มบันทึกหนังสือรับ", link: "Doc-rab-form.html" },
+                { id: "D02", icon: "fa-clipboard-list", name: "ทะเบียนคุมหนังสือรับ", link: "Doc-rab-kum.html" }
+            ]},
+            "L4_SONG": { title: "หนังสือส่ง", level: 4, items: [
+                { id: "D03", icon: "fa-hashtag", name: "จองเลขหนังสือส่ง", link: "Doc-song-jong.html" },
+                { id: "D04", icon: "fa-file-signature", name: "ฟอร์มบันทึกหนังสือส่ง", link: "Doc-song-form.html" },
+                { id: "D05", icon: "fa-clipboard-list", name: "ทะเบียนคุมหนังสือส่ง", link: "Doc-song-kum.html" }
+            ]},
+            "L4_SANG": { title: "คำสั่ง", level: 4, items: [
+		{ id: "D06", icon: "fa-hashtag", name: "จองเลขคำสั่ง", link: "Doc-sang-jong.html" },
+                { id: "D07", icon: "fa-file-signature", name: "ฟอร์มบันทึกคำสั่ง", link: "Doc-sang-form.html" },
+                { id: "D08", icon: "fa-clipboard-list", name: "ทะเบียนคุมคำสั่ง", link: "Doc-sang-kum.html" }
+            ]}
+        };
+
+        // 2. State Management & DOM Elements
+        const menuContainer = document.getElementById('menuContainer');
+        const currentTitleElement = document.getElementById('currentTitle');
+        const currentLevelElement = document.getElementById('currentLevel');
+        // ส่วนควบคุมการนำทาง
+        const navButtons = document.getElementById('navButtons');
+        const backButton = document.getElementById('backButton');
+        const homeButton = document.getElementById('homeButton');
+        
+        // History Stack สำหรับการนำทางย้อนกลับ (เก็บ key ของระดับก่อนหน้า)
+        let history = []; 
+        let currentLevelKey = "L1_MAIN";
+
+        // 3. ฟังก์ชันสร้างเมนู Item (Render)
+        const createMenuItem = (item) => {
+            const isLink = item.link;
+            const element = document.createElement(isLink ? 'a' : 'div');
+            
+            // กำหนด CSS Class สำหรับ Item
+            element.className = 'menu-item p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl flex items-center space-x-4';
+            
+            // กำหนด Content
+            element.innerHTML = `
+                <div class="menu-icon text-3xl sm:text-4xl w-10 text-center">
+                    <i class="fas ${item.icon}"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-gray-800">${item.name}</h3>
+                    <!-- ปรับปรุงการแสดงผล URL สำหรับลิงก์สุดท้าย -->
+                    
+		       <p class="text-[0.4rem] text-gray-500">${isLink ? 'ไปยัง : ' + item.link : 'คลิก.ดูเมนูย่อย'}</p>
+
+                </div>
+            `;
+
+            if (isLink) {
+                // ถ้าเป็น Link (ระดับสุดท้าย) ให้เป็นแท็ก <a> และเปิดหน้าใหม่
+                element.href = item.link;
+                element.target = "_blank";
+                element.classList.add('border-l-4', 'border-red-500'); // เน้นว่าเป็นจุดสิ้นสุด
+            } else {
+                // ถ้าเป็นเมนูย่อย ให้เพิ่ม Event Listener สำหรับนำทาง
+                element.addEventListener('click', () => {
+                    navigateTo(item.nextLevel);
+                });
+            }
+
+            return element;
+        };
+
+        // 4. ฟังก์ชันจัดการการนำทาง
+        const navigateTo = (key) => {
+            const newLevel = menuData[key];
+            if (!newLevel) return;
+
+            // บันทึกระดับปัจจุบันลงใน History ก่อนเปลี่ยน
+            history.push(currentLevelKey); 
+            currentLevelKey = key;
+
+            // Render เมนูใหม่
+            renderCurrentMenu();
+        };
+
+        // 5. ฟังก์ชัน Render เมนูตามระดับปัจจุบัน
+        const renderCurrentMenu = () => {
+            const data = menuData[currentLevelKey];
+            
+            // อัปเดต Title และ Level
+            currentTitleElement.textContent = data.title;
+            currentLevelElement.textContent = `เมนูย่อย ระดับที่ ${data.level}: ${data.title}`;
+            
+            // อัปเดตสถานะปุ่มนำทาง (Back/Home)
+            const isRootLevel = currentLevelKey === "L1_MAIN";
+
+            if (!isRootLevel) {
+                navButtons.classList.remove('hidden');
+                backButton.classList.remove('hidden'); // ปุ่มย้อนกลับหนึ่งระดับ
+                homeButton.classList.remove('hidden'); // ปุ่มกลับเมนูหลัก
+            } else {
+                navButtons.classList.add('hidden');
+                backButton.classList.add('hidden');
+                homeButton.classList.add('hidden');
+            }
+
+            // สร้างรายการเมนูใหม่
+            menuContainer.innerHTML = ''; // ล้างเมนูเดิม
+            data.items.forEach(item => {
+                menuContainer.appendChild(createMenuItem(item));
+            });
+            
+            // Scroll ไปด้านบนสุดเมื่อเปลี่ยนเมนู (UX)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // 6. ฟังก์ชันจัดการปุ่มย้อนกลับหนึ่งระดับ (Go Back)
+        const goBack = () => {
+            if (history.length > 0) {
+                // นำ key ระดับก่อนหน้าออกจาก History
+                currentLevelKey = history.pop();
+                renderCurrentMenu();
+            }
+        };
+
+        // 7. ฟังก์ชันจัดการปุ่มกลับเมนูหลัก (Go Home)
+        const goToMain = () => {
+            if (currentLevelKey !== "L1_MAIN") {
+                history = []; // ล้าง History ทั้งหมด
+                currentLevelKey = "L1_MAIN";
+                renderCurrentMenu();
+            }
+        };
+
+        // 8. Event Listener สำหรับปุ่มย้อนกลับและปุ่มเมนูหลัก
+        backButton.addEventListener('click', goBack);
+        homeButton.addEventListener('click', goToMain);
+        
+        // เริ่มต้นการ Render ครั้งแรกเมื่อโหลดหน้าเว็บ
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCurrentMenu();
+        });
+        
+    </script>
+</body>
+</html>
