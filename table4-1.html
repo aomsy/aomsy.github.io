@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="th" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; font-family: 'Prompt', sans-serif; }
+
+  .subject-chip {
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .subject-chip:active, .subject-chip.dragging {
+    cursor: grabbing;
+    transform: scale(1.08);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    z-index: 100;
+  }
+
+  .slot-cell {
+    min-height: 52px;
+    transition: background 0.2s, border-color 0.2s;
+    border: 2px dashed transparent;
+  }
+  .slot-cell.drag-over {
+    border-color: #EC4899;
+    background: #FCE7F3 !important;
+  }
+
+  .bounce-in {
+    animation: bounceIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes bounceIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .day-tab.active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    animation: fadeIn 0.2s;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+</style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto"><!-- Header -->
+   <div class="sticky top-0 z-30 px-4 pt-4 pb-3" id="header-bg" style="background: linear-gradient(135deg, rgba(196, 18, 46, 0.85) 0%, rgba(218, 41, 28, 0.85) 50%, rgba(27, 43, 79, 0.85) 100%); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); background-size: cover; background-position: center; background-blend-mode: multiply;">
+    <div class="flex items-center gap-3 mb-3">
+     <div class="relative"><input type="file" id="profile-upload" class="hidden" accept="image/*"> <button id="profile-button" class="w-14 h-14 rounded-full flex items-center justify-center shadow-lg font-bold text-lg cursor-pointer transition-transform hover:scale-110 border-3 border-white" style="background: linear-gradient(135deg, #C4122E, #FFC72C); color: white;" onclick="document.getElementById('profile-upload').click();"> <span id="profile-icon">⚽</span> </button>
+     </div>
+     <div class="flex-1">
+      <h1 id="main-title" class="text-lg font-bold text-white drop-shadow" style="font-family: 'Prompt', sans-serif; letter-spacing: 0.5px;">ตารางเรียน</h1>
+      <p id="student-name-display" class="text-xs text-white/80">ดช.ปวรวัฒน์ เข็มแป้นพะเนา</p>
+     </div>
+     <div class="flex gap-1.5 flex-shrink-0"><input type="file" id="background-upload" class="hidden" accept="image/*"> <button id="bg-button" class="px-3 py-1.5 bg-white/25 hover:bg-white/40 text-white text-xs font-semibold rounded-full transition flex items-center gap-1" onclick="document.getElementById('background-upload').click();" style="backdrop-filter: blur(4px); border: 1px solid white/30;"> <i data-lucide="image" style="width: 14px; height: 14px;"></i>ส่วนหัวและท้าย </button> <button id="view-toggle" class="px-3 py-1.5 bg-white/25 hover:bg-white/40 text-white text-xs font-semibold rounded-full transition flex items-center gap-1" onclick="toggleViewMode();" style="backdrop-filter: blur(4px); border: 1px solid white/30;"> <i data-lucide="layout-grid" style="width: 14px; height: 14px;"></i>สัปดาห์ </button>
+     </div>
+    </div><!-- Day tabs -->
+    <div class="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1" id="day-tabs"></div>
+   </div><!-- Schedule content -->
+   <div id="schedule-content" class="px-3 py-3"></div><!-- Subject palette -->
+   <div class="sticky bottom-0 z-30 px-3 pb-4 pt-3" style="background: linear-gradient(0deg, rgba(20, 40, 80, 0.95) 70%, transparent); backdrop-filter: blur(8px);">
+    <div class="flex items-center justify-between mb-2">
+     <p class="text-xs font-bold" style="color: #FFC72C; text-transform: uppercase; letter-spacing: 0.5px;">⚽ วิชาเรียน</p><button id="add-subject-btn" class="px-2 py-1 text-xs font-bold rounded-full transition hover:scale-105" style="background: #C4122E; color: white;" onclick="openSubjectModal('add')"><i data-lucide="plus" style="width: 14px; height: 14px; display: inline; margin-right: 4px;"></i>เพิ่ม</button>
+    </div>
+    <div class="flex flex-wrap gap-2" id="subject-palette"></div>
+   </div><!-- Footer Credits -->
+   <div class="px-3 py-4 text-center border-t border-gray-300" style="background: #f8f9fa; font-size: 12px; color: #666;">
+    <p>พัฒนาเพื่อ <strong>ครอบครัว.เข็มแป้นพะเนา</strong> 👨‍👩‍👧‍👦</p>
+   </div><!-- Subject Modal -->
+   <div id="subject-modal" class="modal-overlay hidden" onclick="if(event.target===this) closeSubjectModal();">
+    <div class="modal-content">
+     <h2 class="text-lg font-bold mb-4" id="modal-title">เพิ่มวิชาเรียน</h2>
+     <div class="space-y-3"><input type="text" id="subject-name-input" placeholder="ชื่อวิชา (เช่น คณิต)" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-red-600" style="font-family: 'Prompt', sans-serif;"> <input type="text" id="subject-emoji-input" placeholder="อีโมจิ (เช่น 🔢)" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-red-600 text-center" maxlength="2" style="font-family: 'Prompt', sans-serif;">
+      <div class="text-xs font-semibold mb-1" style="color: #666;">
+       เลือกสี:
+      </div>
+      <div class="grid grid-cols-5 gap-2" id="color-picker"></div>
+     </div>
+     <div class="flex gap-2 mt-6"><button onclick="closeSubjectModal()" class="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-xl font-semibold transition hover:bg-gray-100">ยกเลิก</button> <button id="save-subject-btn" onclick="saveSubject()" class="flex-1 px-4 py-2.5 rounded-xl font-semibold text-white transition hover:scale-105" style="background: #C4122E;">บันทึก</button>
+     </div>
+    </div>
+   </div>
+   <script>
+const DAYS = ['จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์','อาทิตย์'];
+const SLOTS = [
+  {slot:1, time:'08:00'},
+  {slot:2, time:'08:30'},
+  {slot:3, time:'09:00'},
+  {slot:4, time:'09:30'},
+  {slot:5, time:'10:00'},
+  {slot:6, time:'10:30'},
+  {slot:7, time:'11:00'},
+  {slot:8, time:'11:30'},
+  {slot:9, time:'12:00'},
+  {slot:10, time:'12:30'},
+  {slot:11, time:'13:00'},
+  {slot:12, time:'13:30'},
+  {slot:13, time:'14:00'},
+  {slot:14, time:'14:30'},
+  {slot:15, time:'15:00'},
+  {slot:16, time:'15:30'},
+  {slot:17, time:'16:00'},
+  {slot:18, time:'16:30'},
+  {slot:19, time:'17:00'},
+  {slot:20, time:'17:30'},
+  {slot:21, time:'18:00'},
+  {slot:22, time:'18:30'},
+  {slot:23, time:'19:00'},
+  {slot:24, time:'19:30'},
+];
+
+const DEFAULT_SUBJECTS = [
+  {id:'math', name:'คณิต', emoji:'🔢', bg:'#FF6B6B', text:'#fff'},
+  {id:'thai', name:'ภาษาไทย', emoji:'📖', bg:'#4ECDC4', text:'#fff'},
+  {id:'eng', name:'อังกฤษ', emoji:'🌍', bg:'#45B7D1', text:'#fff'},
+  {id:'sci', name:'วิทย์', emoji:'🔬', bg:'#96CEB4', text:'#fff'},
+  {id:'soc', name:'สังคม', emoji:'🏛️', bg:'#DDA0DD', text:'#fff'},
+  {id:'art', name:'ศิลปะ', emoji:'🎨', bg:'#FFEAA7', text:'#333'},
+  {id:'pe', name:'พลศึกษา', emoji:'⚽', bg:'#FF8C42', text:'#fff'},
+  {id:'music', name:'ดนตรี', emoji:'🎵', bg:'#A29BFE', text:'#fff'},
+  {id:'lunch', name:'พักเที่ยง', emoji:'🍱', bg:'#FD79A8', text:'#fff'},
+  {id:'free', name:'ว่าง', emoji:'✨', bg:'#BDBDBD', text:'#fff'},
+];
+
+const DAY_COLORS = ['#FF4655','#FFA500','#1B9CFC','#5F27CD','#00D2D3'];
+const COLOR_OPTIONS = ['#FF6B6B','#FFA500','#1B9CFC','#5F27CD','#00D2D3','#FF4655','#FDCB6E','#00E4D6','#F368E0','#A29BFE'];
+
+let selectedDay = 'จันทร์';
+let viewMode = 'day'; // 'day' or 'week'
+let scheduleData = []; // from Data SDK
+let customSubjects = []; // user-created subjects
+let currentRecordCount = 0;
+let dragSubjectId = null;
+let studentImage = null;
+let editingSubjectId = null;
+
+// Default config
+const defaultConfig = {
+  schedule_title: 'ตารางเรียนของฉัน',
+  student_name: 'นักเรียน',
+  background_color: '#0a1e3c',
+  surface_color: '#FFFFFF',
+  text_color: '#1F2937',
+  primary_action_color: '#C4122E',
+  secondary_action_color: '#FFC72C',
+  font_family: 'Prompt',
+  font_size: 16,
+};
+
+function getAllSubjects() {
+  return [...DEFAULT_SUBJECTS, ...customSubjects];
+}
+
+function getSubject(id) { 
+  return getAllSubjects().find(s => s.id === id); 
+}
+
+function getAssignment(day, slot) {
+  return scheduleData.find(d => d.day === day && d.slot === slot);
+}
+
+// Subject Management
+function openSubjectModal(mode, subjectId = null) {
+  editingSubjectId = subjectId;
+  const modal = document.getElementById('subject-modal');
+  const titleEl = document.getElementById('modal-title');
+  const nameInput = document.getElementById('subject-name-input');
+  const emojiInput = document.getElementById('subject-emoji-input');
+  
+  nameInput.value = '';
+  emojiInput.value = '';
+  
+  if (mode === 'edit' && subjectId) {
+    titleEl.textContent = 'แก้ไขวิชาเรียน';
+    const subj = getSubject(subjectId);
+    if (subj) {
+      nameInput.value = subj.name;
+      emojiInput.value = subj.emoji;
+      document.querySelectorAll('.color-option').forEach(btn => {
+        btn.classList.toggle('ring-2 ring-offset-2 ring-gray-400', btn.dataset.color === subj.bg);
+      });
+    }
+  } else {
+    titleEl.textContent = 'เพิ่มวิชาเรียน';
+    emojiInput.value = '✨';
+  }
+  
+  modal.classList.remove('hidden');
+  renderColorPicker();
+  lucide.createIcons();
+}
+
+function closeSubjectModal() {
+  document.getElementById('subject-modal').classList.add('hidden');
+  editingSubjectId = null;
+}
+
+function renderColorPicker() {
+  const picker = document.getElementById('color-picker');
+  picker.innerHTML = '';
+  COLOR_OPTIONS.forEach(color => {
+    const btn = document.createElement('button');
+    btn.className = 'color-option w-12 h-12 rounded-xl transition hover:scale-110';
+    btn.style.background = color;
+    btn.dataset.color = color;
+    btn.onclick = () => {
+      document.querySelectorAll('.color-option').forEach(b => b.classList.remove('ring-2', 'ring-offset-2', 'ring-gray-400'));
+      btn.classList.add('ring-2', 'ring-offset-2', 'ring-gray-400');
+    };
+    picker.appendChild(btn);
+  });
+  // Select first one by default
+  if (picker.firstChild) picker.firstChild.classList.add('ring-2', 'ring-offset-2', 'ring-gray-400');
+}
+
+async function saveSubject() {
+  const nameInput = document.getElementById('subject-name-input');
+  const emojiInput = document.getElementById('subject-emoji-input');
+  const selectedColor = document.querySelector('.color-option.ring-2')?.dataset.color || COLOR_OPTIONS[0];
+  
+  if (!nameInput.value.trim() || !emojiInput.value.trim()) {
+    showToast('กรุณากรอกชื่อและอีโมจิ');
+    return;
+  }
+
+  if (editingSubjectId) {
+    // Edit existing
+    const idx = customSubjects.findIndex(s => s.id === editingSubjectId);
+    if (idx >= 0) {
+      customSubjects[idx] = {
+        ...customSubjects[idx],
+        name: nameInput.value.trim(),
+        emoji: emojiInput.value.trim(),
+        bg: selectedColor,
+      };
+    }
+  } else {
+    // Add new
+    customSubjects.push({
+      id: 'custom-' + Date.now(),
+      name: nameInput.value.trim(),
+      emoji: emojiInput.value.trim(),
+      bg: selectedColor,
+      text: '#fff'
+    });
+  }
+
+  renderPalette();
+  closeSubjectModal();
+  showToast('บันทึกสำเร็จ!');
+}
+
+// Render day tabs
+function renderDayTabs() {
+  const container = document.getElementById('day-tabs');
+  container.innerHTML = '';
+  DAYS.forEach((day, i) => {
+    const btn = document.createElement('button');
+    btn.className = `day-tab flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${day === selectedDay ? 'active text-white' : 'text-white/70'}`;
+    btn.style.background = day === selectedDay ? DAY_COLORS[i] : 'rgba(255,255,255,0.2)';
+    btn.textContent = day;
+    btn.onclick = () => { selectedDay = day; renderDayTabs(); renderScheduleContent(); };
+    container.appendChild(btn);
+  });
+}
+
+// Render schedule based on view mode
+function renderScheduleContent() {
+  if (viewMode === 'day') {
+    renderDayView();
+  } else {
+    renderWeekView();
+  }
+}
+
+// Day view - time columns, single day across
+function renderDayView() {
+  const container = document.getElementById('schedule-content');
+  container.innerHTML = '';
+  const cfg = window.elementSdk?.config || defaultConfig;
+
+  const dayHeader = document.createElement('div');
+  dayHeader.className = 'mb-4 p-3 rounded-xl text-center';
+  dayHeader.style.background = cfg.surface_color || defaultConfig.surface_color;
+  dayHeader.innerHTML = `<p class="text-sm opacity-60" style="color: ${cfg.text_color || defaultConfig.text_color}">วัน</p><p class="text-2xl font-bold" style="color: ${cfg.primary_action_color || defaultConfig.primary_action_color}">${selectedDay}</p>`;
+  container.appendChild(dayHeader);
+
+  SLOTS.forEach(({slot, time}) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-stretch gap-2 mb-2';
+
+    // Time label
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'flex-shrink-0 w-14 flex items-center justify-center text-xs font-bold rounded-xl';
+    timeLabel.style.cssText = `color:${cfg.text_color || defaultConfig.text_color}; background: ${cfg.surface_color || defaultConfig.surface_color}; opacity:0.85;`;
+    timeLabel.textContent = time;
+    row.appendChild(timeLabel);
+
+    // Slot cell
+    const cell = document.createElement('div');
+    cell.className = 'slot-cell flex-1 rounded-xl flex items-center px-3 py-2';
+    cell.style.background = cfg.surface_color || defaultConfig.surface_color;
+    cell.dataset.day = selectedDay;
+    cell.dataset.slot = slot;
+
+    const assignment = getAssignment(selectedDay, slot);
+    if (assignment) {
+      const subj = getSubject(assignment.subject_id);
+      if (subj) {
+        cell.style.background = subj.bg;
+        cell.innerHTML = `<span class="text-xl mr-2">${subj.emoji}</span><span class="font-semibold text-sm flex-1" style="color:${subj.text}">${subj.name}</span>
+          <button class="p-1 rounded-full hover:bg-black/10 transition" data-remove="${assignment.__backendId}" style="color:${subj.text}; flex-shrink: 0;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>`;
+      }
+    } else {
+      cell.innerHTML = `<span class="text-xs opacity-30" style="color:${cfg.text_color || defaultConfig.text_color}">ว่าง</span>`;
+    }
+
+    // Drag events
+    cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over'); });
+    cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+    cell.addEventListener('drop', e => { e.preventDefault(); cell.classList.remove('drag-over'); handleDrop(selectedDay, slot); });
+    cell.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+
+    row.appendChild(cell);
+    container.appendChild(row);
+  });
+
+  // Remove buttons
+  container.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.remove;
+      const rec = scheduleData.find(r => r.__backendId === id);
+      if (rec) {
+        btn.disabled = true;
+        await window.dataSdk.delete(rec);
+      }
+    });
+  });
+
+  lucide.createIcons();
+}
+
+// Week view - time columns (horizontal top), days as rows (vertical left)
+function renderWeekView() {
+  const container = document.getElementById('schedule-content');
+  container.innerHTML = '';
+  const cfg = window.elementSdk?.config || defaultConfig;
+
+  const table = document.createElement('div');
+  table.className = 'rounded-xl shadow-lg overflow-x-auto';
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display: grid; grid-template-columns: auto ' + SLOTS.map(() => '1fr').join(' ') + '; gap: 1px; background: rgba(0,0,0,0.3); padding: 1px; border-radius: 12px;';
+
+  // Header - day column (top-left corner)
+  const cornerHeader = document.createElement('div');
+  cornerHeader.style.cssText = `background: rgba(0,30,60,0.7); color: white; padding: 8px; font-weight: bold; font-size: 11px; text-align: center;`;
+  cornerHeader.textContent = '📅 วัน';
+  grid.appendChild(cornerHeader);
+
+  // Header - time columns (top row)
+  SLOTS.forEach(({time}) => {
+    const timeHeader = document.createElement('div');
+    timeHeader.style.cssText = `background: rgba(0,30,60,0.7); color: #FFC72C; padding: 8px; font-weight: bold; font-size: 10px; text-align: center;`;
+    timeHeader.textContent = time;
+    grid.appendChild(timeHeader);
+  });
+
+  // Rows for each day
+  DAYS.forEach((day, dayIdx) => {
+    // Day cell (left column)
+    const dayCell = document.createElement('div');
+    dayCell.style.cssText = `background: ${DAY_COLORS[dayIdx]}; color: white; padding: 8px; font-size: 11px; font-weight: bold; text-align: center;`;
+    dayCell.textContent = day;
+    grid.appendChild(dayCell);
+
+    // Time slots
+    SLOTS.forEach(({slot}) => {
+      const cell = document.createElement('div');
+      cell.className = 'slot-cell-week';
+      cell.style.cssText = `background: rgba(255,255,255,0.1); padding: 4px; font-size: 9px; text-align: center; cursor: pointer; transition: all 0.2s; min-height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);`;
+      cell.dataset.day = day;
+      cell.dataset.slot = slot;
+
+      const assignment = getAssignment(day, slot);
+      if (assignment) {
+        const subj = getSubject(assignment.subject_id);
+        if (subj) {
+          cell.style.background = subj.bg;
+          cell.innerHTML = `<div style="color: ${subj.text}; font-weight: bold; word-break: break-word;">${subj.emoji}<br>${subj.name}</div>`;
+          cell.addEventListener('click', async () => {
+            await window.dataSdk.delete(assignment);
+          });
+        }
+      }
+
+      // Drag events for week view
+      cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over'); });
+      cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+      cell.addEventListener('drop', e => { e.preventDefault(); cell.classList.remove('drag-over'); handleDrop(day, slot); });
+
+      grid.appendChild(cell);
+    });
+  });
+
+  table.appendChild(grid);
+  container.appendChild(table);
+  lucide.createIcons();
+}
+
+function toggleViewMode() {
+  viewMode = viewMode === 'day' ? 'week' : 'day';
+  const btn = document.getElementById('view-toggle');
+  btn.innerHTML = viewMode === 'day' ? '<i data-lucide="calendar" style="width: 14px; height: 14px;"></i>วัน' : '<i data-lucide="layout-grid" style="width: 14px; height: 14px;"></i>สัปดาห์';
+  lucide.createIcons();
+  renderScheduleContent();
+}
+
+// Render subject palette
+function renderPalette() {
+  const container = document.getElementById('subject-palette');
+  container.innerHTML = '';
+  
+  getAllSubjects().forEach(subj => {
+    const chip = document.createElement('div');
+    chip.className = 'subject-chip bounce-in flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm group relative';
+    chip.style.cssText = `background:${subj.bg}; color:${subj.text};`;
+    chip.draggable = true;
+    
+    const chipContent = document.createElement('span');
+    chipContent.innerHTML = `${subj.emoji} ${subj.name}`;
+    chip.appendChild(chipContent);
+    
+    // Edit/delete buttons for custom subjects
+    if (subj.id.startsWith('custom-')) {
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition';
+      
+      const editBtn = document.createElement('button');
+      editBtn.className = 'p-0.5 rounded hover:bg-black/20';
+      editBtn.innerHTML = '<i data-lucide="edit-2" style="width: 12px; height: 12px;"></i>';
+      editBtn.onclick = (e) => { e.stopPropagation(); openSubjectModal('edit', subj.id); };
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'p-0.5 rounded hover:bg-black/20';
+      deleteBtn.innerHTML = '<i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>';
+      deleteBtn.onclick = (e) => { e.stopPropagation(); removeCustomSubject(subj.id); };
+      
+      btnGroup.appendChild(editBtn);
+      btnGroup.appendChild(deleteBtn);
+      chip.appendChild(btnGroup);
+    }
+
+    chip.addEventListener('dragstart', e => {
+      dragSubjectId = subj.id;
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    // Touch drag
+    let touchClone = null;
+    chip.addEventListener('touchstart', e => {
+      dragSubjectId = subj.id;
+      chip.classList.add('dragging');
+      touchClone = chip.cloneNode(true);
+      touchClone.style.cssText = `${chip.style.cssText} position:fixed; pointer-events:none; z-index:999; opacity:0.85;`;
+      document.body.appendChild(touchClone);
+      moveTouchClone(e);
+    }, {passive:true});
+
+    chip.addEventListener('touchmove', e => {
+      e.preventDefault();
+      moveTouchClone(e);
+      highlightCellUnderTouch(e);
+    }, {passive:false});
+
+    chip.addEventListener('touchend', e => {
+      chip.classList.remove('dragging');
+      if (touchClone) { touchClone.remove(); touchClone = null; }
+      dropOnCellUnderTouch(e);
+      clearHighlights();
+    });
+
+    function moveTouchClone(e) {
+      if (!touchClone || !e.touches[0]) return;
+      touchClone.style.left = (e.touches[0].clientX - 40) + 'px';
+      touchClone.style.top = (e.touches[0].clientY - 20) + 'px';
+    }
+
+    container.appendChild(chip);
+  });
+  
+  lucide.createIcons();
+}
+
+function removeCustomSubject(id) {
+  customSubjects = customSubjects.filter(s => s.id !== id);
+  // Remove all assignments with this subject
+  scheduleData = scheduleData.filter(d => d.subject_id !== id);
+  renderPalette();
+  renderScheduleContent();
+  showToast('ลบวิชาแล้ว');
+}
+
+function highlightCellUnderTouch(e) {
+  clearHighlights();
+  const t = e.touches[0];
+  if (!t) return;
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const cell = el?.closest?.('.slot-cell');
+  if (cell) cell.classList.add('drag-over');
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.slot-cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+}
+
+function dropOnCellUnderTouch(e) {
+  const t = e.changedTouches[0];
+  if (!t) return;
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const cell = el?.closest?.('.slot-cell');
+  if (cell && dragSubjectId) {
+    handleDrop(cell.dataset.day, parseInt(cell.dataset.slot));
+  }
+  dragSubjectId = null;
+}
+
+async function handleDrop(day, slot) {
+  if (!dragSubjectId) return;
+  const existing = getAssignment(day, slot);
+
+  if (existing) {
+    // Update
+    const updated = {...existing, subject_id: dragSubjectId};
+    await window.dataSdk.update(updated);
+  } else {
+    if (currentRecordCount >= 999) {
+      showToast('ถึงจำนวนสูงสุดแล้ว กรุณาลบบางรายการก่อน');
+      return;
+    }
+    await window.dataSdk.create({ subject_id: dragSubjectId, day, slot });
+  }
+  dragSubjectId = null;
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-50 text-white text-sm px-4 py-2.5 rounded-full shadow-lg font-semibold';
+  t.style.background = '#C4122E';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// Data SDK
+const dataHandler = {
+  onDataChanged(data) {
+    scheduleData = data;
+    currentRecordCount = data.length;
+    renderScheduleContent();
+  }
+};
+
+// Element SDK
+function applyConfig(config) {
+  document.getElementById('main-title').textContent = config.schedule_title || defaultConfig.schedule_title;
+  document.getElementById('student-name-display').textContent = config.student_name || defaultConfig.student_name;
+
+  const font = config.font_family || defaultConfig.font_family;
+  document.getElementById('app').style.fontFamily = `${font}, Prompt, sans-serif`;
+
+  renderScheduleContent();
+}
+
+// Handle profile image upload
+document.getElementById('profile-upload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const base64 = evt.target.result;
+      const profileBtn = document.getElementById('profile-button');
+      const icon = document.getElementById('profile-icon');
+      profileBtn.style.backgroundImage = `url(${base64})`;
+      profileBtn.style.backgroundSize = 'cover';
+      profileBtn.style.backgroundPosition = 'center';
+      icon.textContent = '';
+      studentImage = base64;
+      showToast('บันทึกรูปเจ้าของตารางแล้ว!');
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Handle background image upload
+document.getElementById('background-upload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const base64 = evt.target.result;
+      const headerBg = document.getElementById('header-bg');
+      const footerBg = document.getElementById('footer-bg');
+      
+      // Apply to header only
+      headerBg.style.backgroundImage = `url('${base64}')`;
+      headerBg.style.backgroundSize = 'cover';
+      headerBg.style.backgroundPosition = 'center';
+      
+      // Apply different styling to footer (semi-transparent with gradient)
+      if (footerBg) {
+        footerBg.style.backgroundImage = `url('${base64}')`;
+        footerBg.style.backgroundSize = 'cover';
+        footerBg.style.backgroundPosition = 'center';
+      }
+      
+      showToast('เปลี่ยนพื้นหลังแล้ว!');
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (config) => applyConfig(config),
+  mapToCapabilities: (config) => ({
+    recolorables: [
+      { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({background_color:v}); }},
+      { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({surface_color:v}); }},
+      { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({text_color:v}); }},
+      { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: v => { config.primary_action_color = v; window.elementSdk.setConfig({primary_action_color:v}); }},
+      { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: v => { config.secondary_action_color = v; window.elementSdk.setConfig({secondary_action_color:v}); }},
+    ],
+    borderables: [],
+    fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: v => { config.font_family = v; window.elementSdk.setConfig({font_family:v}); }},
+    fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: v => { config.font_size = v; window.elementSdk.setConfig({font_size:v}); }},
+  }),
+  mapToEditPanelValues: (config) => new Map([
+    ['schedule_title', config.schedule_title || defaultConfig.schedule_title],
+    ['student_name', config.student_name || defaultConfig.student_name],
+  ]),
+});
+
+// Init
+renderDayTabs();
+renderPalette();
+renderScheduleContent();
+
+(async () => {
+  const r = await window.dataSdk.init(dataHandler);
+  if (!r.isOk) console.error('Data SDK init failed');
+})();
+</script>
+  </div>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9eaf518cd529658d',t:'MTc3NTk2NjM2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
